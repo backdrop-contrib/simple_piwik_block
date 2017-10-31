@@ -1,0 +1,249 @@
+<?php
+
+/**
+ * Implements hook_block_info().
+ */
+function simple_piwik_block_block_info() {
+  $blocks = array();
+  $blocks['simple_piwik_block'] = array(
+    'info' => t('Simple Piwik Block'),
+    'description' => t('Adds a piwik tracking block to the site.'),
+//    'required contexts' => array('node' => 'node', 'taxonomy' => 'taxonomy', 'user' => 'user'),
+  );
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_configure().
+ * @param  string $delta    the block name
+ * @param  array  $settings the settings for that block
+ * @return array            the settings form for that block
+ */
+function simple_piwik_block_block_configure($delta='', $settings = array()) {
+  $form = array();
+
+  switch($delta) {
+    case 'simple_piwik_block' :
+
+      $node_types = node_type_get_types();
+      $content_types = array();
+      foreach ($node_types as $key => $value) {
+        $content_types[$key] = $value->name;
+      }
+
+      $vocabularies = taxonomy_get_vocabularies();
+      $vocab_options = array();
+      foreach ($vocabularies as $key => $value) {
+        $vocab_options[$key] = $value->name;
+      }
+
+      // Text field form element
+      $form['simple_piwik_block_url'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Enter your piwik server url.'),
+        '#default_value' => $settings['simple_piwik_block_url'],
+        '#element_validate' => array('simple_piwik_block_url_validate'),
+      );
+
+      $form['simple_piwik_block_site_id'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Enter your piwik site id.'),
+        '#default_value' => $settings['simple_piwik_block_site_id'],
+        '#element_validate' => array('simple_piwik_block_site_id_validate'),
+      );
+
+      $form['simple_piwik_block_node_types'] = array(
+        '#type' => 'checkboxes',
+        '#title' => t('Select node types to trac.'),
+        '#options' => $content_types,
+        '#default_value' => $settings['simple_piwik_block_node_types'],
+      );
+
+      $form['simple_piwik_block_vocabularies'] = array(
+        '#type' => 'checkboxes',
+        '#title' => t('Select vocabularies to trac.'),
+        '#options' => $vocab_options,
+        '#default_value' => $settings['simple_piwik_block_vocabularies'],
+      );
+
+      $form['simple_piwik_block_noscript'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Enable noscript tracking.'),
+        '#default_value' => $settings['simple_piwik_block_noscript'],
+      );
+
+      $form['simple_piwik_block_exclude_authenticated'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Do not trac authenticated user.'),
+        '#default_value' => $settings['simple_piwik_block_exclude_authenticated'],
+      );
+      $form['#validate'] = 'simple_piwik_block_validate_configuration';
+
+      break;
+  }
+  return $form;
+}
+
+/**
+ * Validation for the URL field.
+ * @param  [type] $element [description]
+ */
+function simple_piwik_block_url_validate($element) {
+  if (empty($element['#value'])) {
+    form_set_error('simple_piwik_block_url', 'The URL must not be empty.');
+  }
+
+  // check the url if value is set
+  if (!empty($element['#value']) && valid_url($element['#value'], TRUE)) {
+
+    // start a test request to the given URL
+    $data = array(
+      'module' => 'API',
+      'method' => 'Referrers.getKeywords',
+      'idSite' => $values['simple_piwik_block_site_id'],
+      'period' => 'day',
+      'date'   => 'yesterday',
+      'format' => 'PHP',
+    );
+
+    $options = array(
+      'method' => 'GET',
+      'data' => http_build_query($data),
+      'timeout' => 15,
+    );
+
+    $result = backdrop_http_request($element['#value'], $options);
+    if (!isset($result->status_message) || ($result->status_message != 'OK')
+        || (isset($result->error) && !empty($result->error))) {
+      form_set_error('simple_piwik_block_url', 'Can not connect to server. Please check your URL.');
+    }
+  }
+  else {
+    form_set_error('simple_piwik_block_url', 'This is not a valid URL.');
+  }
+}
+
+/**
+ * Validation for the site id field.
+ * @param  [type] $element [description]
+ */
+function simple_piwik_block_site_id_validate($element) {
+  if (empty($element['#value']) || (!is_numeric($element['#value']))) {
+    form_set_error('simple_piwik_block_site_id', t('Site ID must be a number and not empty.'));
+  }
+}
+
+
+/**
+ * Implements hook_block_view().
+ * @param  string $delta    the name of the block
+ * @param  array  $settings the settings for that block
+ * @param  array  $contexts the context
+ * @return array            the block
+ */
+function simple_piwik_block_block_view($delta = '', $settings = array(), $contexts = array()) {
+  $block = array();
+
+  // it would be great to work with contexts here, but
+  // we also need to work in a non context area
+  // see default layout
+
+  switch($delta) {
+    case 'simple_piwik_block':
+      $show_block = _show_piwik_block($settings);
+      if ($show_block) {
+        $block['content'] = _piwik_block_view($settings);
+      }
+      break;
+  }
+
+  return $block;
+}
+
+
+/**
+ * Generates the string to be inserted as piwik block.
+ * @param  array  $settings the settings for that block
+ * @return string           the piwig block
+ */
+function _piwik_block_view($settings) {
+  $address = $settings['simple_piwik_block_url'];
+  $site_id = $settings['simple_piwik_block_site_id'];
+
+  $temp = explode(':', $address);
+  $protocol = $temp[0];
+  $url = $temp[1];
+
+  $script = '<!-- Piwik  -->
+<script type="text/javascript">
+  var _paq = _paq || [];
+  _paq.push([\'trackPageView\']);
+  _paq.push([\'enableLinkTracking\']);
+  (function() {
+    var u="' . $url . '";
+    _paq.push([\'setTrackerUrl\', u+\'piwik.php\']);
+    _paq.push([\'setSiteId\', ' . $site_id . ']);
+    var d=document, g=d.createElement(\'script\'), s=d.getElementsByTagName(\'script\')[0];
+    g.type=\'text/javascript\'; g.async=true; g.defer=true; g.src=u+\'piwik.js\'; s.parentNode.insertBefore(g,s);
+  })();
+</script>';
+  if ($settings['simple_piwik_block_noscript']) {
+    $script .= '<noscript><p><img src="' . $protocol . ':' . $url . '/piwik.php?idsite=' . $site_id . '" style="border:0;" alt="" /></p></noscript>';
+  }
+
+  $script .= '<!-- End Piwik Code -->';
+
+  return $script;
+
+}
+
+/**
+ * Check if this page is to be tracked by piwik.
+ * @param  array  $settings the settings for the piwik block
+ * @return bool             indicates if this page is to be tracked by piwik
+ */
+function _show_piwik_block($settings) {
+  $item = menu_get_item();
+
+  $do_trac = FALSE;
+
+  // first check user
+  if (user_is_logged_in()) {
+    if ($settings['simple_piwik_block_exclude_authenticated'] != 0) {
+      return FALSE;
+    }
+  }
+
+  if (isset($item['original_map'][0])) {
+    switch ($item['original_map'][0]) {
+      case 'node':
+        $node = $item['page_arguments'][0];
+        $node_type = $node->type;
+        if ($settings['simple_piwik_block_node_types'][$node_type]) {
+          $do_trac = TRUE;
+        }
+        break;
+
+      case 'taxonomy':
+        // check if this is a view
+        if ($item['original_map'][1] == 'term') {
+          $tid = $item['original_map'][2];
+        }
+        else {
+          $tid = $item['original_map'][1];
+        }
+        $term = taxonomy_term_load($tid);
+        $vocabulary = $term->vocabulary;
+        if ($settings['simple_piwik_block_vocabularies'][$vocabulary]) {
+          $do_trac = TRUE;
+        }
+        break;
+
+      default:
+        $do_trac = FALSE;
+        break;
+    }
+  }
+  return $do_trac;
+}
