@@ -1,6 +1,5 @@
 name = Simple Piwik Block
 description = "Adds a pwik tracking block to your site."
 package = "Custom"
-
-; Information added by drupal.org packaging script on 2013-10-26
+type = module
 backdrop = "1.x"
