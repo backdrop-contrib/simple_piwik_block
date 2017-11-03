@@ -27,7 +27,7 @@ function simple_piwik_block_block_configure($delta='', $settings = array()) {
     case 'simple_piwik_block' :
 
       $node_types = node_type_get_types();
-      $content_types = array();
+      $content_types = array('front_page' => 'Front page');
       foreach ($node_types as $key => $value) {
         $content_types[$key] = $value->name;
       }
@@ -215,8 +215,19 @@ function _simple_piwik_block_show_piwik_block($settings) {
     }
   }
 
+  // check if we are on the front page
+  dpm($item);
+
+
   if (isset($item['original_map'][0])) {
     switch ($item['original_map'][0]) {
+      case 'home':
+        // we are on the front page
+        if ($settings['simple_piwik_block_node_types']['front_page']) {
+          $do_trac = TRUE;
+        }
+        break;
+
       case 'node':
         $node = $item['page_arguments'][0];
         $node_type = $node->type;
