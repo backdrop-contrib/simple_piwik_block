@@ -215,10 +215,6 @@ function _simple_piwik_block_show_piwik_block($settings) {
     }
   }
 
-  // check if we are on the front page
-  dpm($item);
-
-
   if (isset($item['original_map'][0])) {
     switch ($item['original_map'][0]) {
       case 'home':
