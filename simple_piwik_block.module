@@ -151,9 +151,9 @@ function simple_piwik_block_block_view($delta = '', $settings = array(), $contex
 
   switch($delta) {
     case 'simple_piwik_block':
-      $show_block = _show_piwik_block($settings);
+      $show_block = _simple_piwik_block_show_piwik_block($settings);
       if ($show_block) {
-        $block['content'] = _piwik_block_view($settings);
+        $block['content'] = _simple_piwik_block_piwik_block_view($settings);
       }
       break;
   }
@@ -167,7 +167,7 @@ function simple_piwik_block_block_view($delta = '', $settings = array(), $contex
  * @param  array  $settings the settings for that block
  * @return string           the piwig block
  */
-function _piwik_block_view($settings) {
+function _simple_piwik_block_piwik_block_view($settings) {
   $address = $settings['simple_piwik_block_url'];
   $site_id = $settings['simple_piwik_block_site_id'];
 
@@ -203,7 +203,7 @@ function _piwik_block_view($settings) {
  * @param  array  $settings the settings for the piwik block
  * @return bool             indicates if this page is to be tracked by piwik
  */
-function _show_piwik_block($settings) {
+function _simple_piwik_block_show_piwik_block($settings) {
   $item = menu_get_item();
 
   $do_trac = FALSE;
