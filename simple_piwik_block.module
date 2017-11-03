@@ -226,6 +226,7 @@ function _show_piwik_block($settings) {
         break;
 
       case 'taxonomy':
+        $tid = 0;
         // check if this is a view
         if ($item['original_map'][1] == 'term') {
           $tid = $item['original_map'][2];
@@ -233,10 +234,12 @@ function _show_piwik_block($settings) {
         else {
           $tid = $item['original_map'][1];
         }
-        $term = taxonomy_term_load($tid);
-        $vocabulary = $term->vocabulary;
-        if ($settings['simple_piwik_block_vocabularies'][$vocabulary]) {
-          $do_trac = TRUE;
+        if ($tid && is_numeric($tid)) {
+          $term = taxonomy_term_load($tid);
+          $vocabulary = $term->vocabulary;
+          if ($settings['simple_piwik_block_vocabularies'][$vocabulary]) {
+            $do_trac = TRUE;
+          }
         }
         break;
 
