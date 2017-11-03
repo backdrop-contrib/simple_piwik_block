@@ -87,7 +87,7 @@ function simple_piwik_block_block_configure($delta='', $settings = array()) {
 
 /**
  * Validation for the URL field.
- * @param  [type] $element [description]
+ * @param array $element the form element to validate
  */
 function simple_piwik_block_url_validate($element) {
   if (empty($element['#value'])) {
@@ -126,7 +126,7 @@ function simple_piwik_block_url_validate($element) {
 
 /**
  * Validation for the site id field.
- * @param  [type] $element [description]
+ * @param array $element the form element to validate
  */
 function simple_piwik_block_site_id_validate($element) {
   if (empty($element['#value']) || (!is_numeric($element['#value']))) {
@@ -165,7 +165,7 @@ function simple_piwik_block_block_view($delta = '', $settings = array(), $contex
 /**
  * Generates the string to be inserted as piwik block.
  * @param  array  $settings the settings for that block
- * @return string           the piwig block
+ * @return string           the piwik block
  */
 function _simple_piwik_block_piwik_block_view($settings) {
   $address = $settings['simple_piwik_block_url'];
