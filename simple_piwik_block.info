@@ -3,3 +3,4 @@ description = "Adds a pwik tracking block to your site."
 package = "Custom"
 type = module
 backdrop = "1.x"
+version = 1.x-1.x-dev
