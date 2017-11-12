@@ -8,7 +8,6 @@ function simple_piwik_block_block_info() {
   $blocks['simple_piwik_block'] = array(
     'info' => t('Simple Piwik Block'),
     'description' => t('Adds a piwik tracking block to the site.'),
-//    'required contexts' => array('node' => 'node', 'taxonomy' => 'taxonomy', 'user' => 'user'),
     'cache' => BACKDROP_CACHE_PER_PAGE,
   );
 
